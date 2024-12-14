@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
+    <style>
+html{
+    scroll-behavior: smooth;
+}
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #2b5876, #4e4376);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            padding: 30px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            resize: none;
+            outline: none;
+        }
+
+        button {
+            background: #ff6f61;
+            color: #fff;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #ff7e73;
+            transform: translateY(-3px);
+        }
+
+        .status {
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            width: 100%;
+        }
+
+        .status p {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .download-link a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #fff;
+            background-color: #28a745;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .download-link a:hover {
+            background-color: #218838;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Email Extractor</h1>
+        <textarea id="urls" rows="5" placeholder="Enter URLs, one per line"></textarea><br>
+        <button id="start">Start Extraction</button>
+        <div class="status" id="status"></div>
+        <div class="download-link" id="download-link"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        const statusDiv = document.getElementById('status');
+        const downloadDiv = document.getElementById('download-link');
+
+        document.getElementById('start').addEventListener('click', () => {
+            const urls = document.getElementById('urls').value.trim().split('\n').filter(url => url);
+            if (urls.length > 0) {
+                statusDiv.innerHTML = '';
+                downloadDiv.innerHTML = '';
+                socket.emit('start_extraction', urls);
+            } else {
+                alert('Please enter at least one URL.');
+            }
+        });
+
+        socket.on('status_update', data => {
+            const p = document.createElement('p');
+            p.textContent = data.data;
+            statusDiv.appendChild(p);
+            statusDiv.scrollTop = statusDiv.scrollHeight;
+        });
+
+        socket.on('extraction_complete', data => {
+            const p = document.createElement('p');
+            p.textContent = `Extraction completed! Total emails: ${data.count}`;
+            statusDiv.appendChild(p);
+
+            if (data.file_name) {
+                const link = document.createElement('a');
+                link.href = `/download/${data.file_name}`;
+                link.textContent = 'Download Extracted Emails';
+                link.download = '';
+                downloadDiv.appendChild(link);
+            }
+        });
+    </script>
+</body>
+</html>
